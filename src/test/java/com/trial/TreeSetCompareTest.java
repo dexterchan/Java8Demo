@@ -24,8 +24,6 @@ public class TreeSetCompareTest {
     }
     @Test
     public void sortAsending(){
-        Comparator<Integer> compare = (a, b)->a-b;
-
 
         for (Integer i : numbers){
             System.out.println(i);
