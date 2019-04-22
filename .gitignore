@@ -1,0 +1,6 @@
+.gradle
+out
+bin
+.settings
+.idea
+gradle
