@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 public class PredicateTest {
     @Test
@@ -55,5 +56,19 @@ public class PredicateTest {
         displayFunc.apply(p1.and(p2),x);
         System.out.println(">10 or even number");
         displayFunc.apply(p1.or(p2),x);
+    }
+
+    @Test
+    public void CheckNameStartWithKApp(){
+        String[] names = {"Donald","Apple","Mickey","Minnie","Ken"};
+
+        Predicate<String> checkK = (name)->name.toUpperCase().startsWith("K");
+        Stream<String> sName=Arrays.stream(names).filter(checkK);
+
+        //System.out.println(sName.toArray());
+        sName.forEach(x->System.out.print(x));
+
+        System.out.println();
+        sName.close();
     }
 }
