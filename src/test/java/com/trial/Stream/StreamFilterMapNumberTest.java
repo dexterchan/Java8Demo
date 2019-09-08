@@ -22,6 +22,14 @@ public class StreamFilterMapNumberTest {
         }
 
     }
+    @Test
+    public void iterateStream(){
+        Stream<Integer> sInteger=numbers.stream().filter(x->x%2==0);
+        sInteger.forEach(
+                s->System.out.println(s)
+        );
+
+    }
 
     @Test
     public void runFilter(){
@@ -56,6 +64,7 @@ public class StreamFilterMapNumberTest {
     @Test
     public void voidMap(){
         List<Integer> doubleNumber = numbers.stream().map(x->x*2).collect(Collectors.toList());
+
         System.out.println("Double testing");
         System.out.println(doubleNumber);
     }
@@ -72,7 +81,7 @@ public class StreamFilterMapNumberTest {
     @Test
     public void runFilterToArray(){
 
-        Integer[] array=numbers.stream().filter(x->x%2==0).toArray(Integer[]::new);
+        Integer[] array=numbers.stream().filter(x->x%2==0).toArray( (s)->new Integer[s]);//Integer[]::new);
         System.out.print("To Array:");
         for( int i: array){
             System.out.println(i);
