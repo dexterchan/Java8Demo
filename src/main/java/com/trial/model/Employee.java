@@ -1,7 +1,7 @@
 package com.trial.model;
 
 public class Employee {
-    public int eno;
+    public Integer eno;
     public String ename;
 
     public Employee(int eno, String ename){
