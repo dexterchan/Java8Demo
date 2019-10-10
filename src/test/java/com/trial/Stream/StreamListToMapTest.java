@@ -43,8 +43,20 @@ public class StreamListToMapTest {
 
         Map<String, Integer> cards2Length = (Map<String,Integer>) cards.stream()
                 .collect(Collectors.toMap(Function.identity(), String::length, (e1, e2) -> e1));
+
         System.out.println("map: " + cards2Length);
 
+    }
+
+    @Test
+    public void duplicatedKey2(){
+        List cards = Arrays.asList("Visa", "MasterCard", "American Express", "Visa");
+        System.out.println("list: " + cards);
+
+        Map<String, Integer> cards2Length = (Map<String,Integer>) cards.stream()
+                .collect(Collectors.toMap(Function.identity(), String::length, (e1, e2) -> e1));
+        System.out.println("map: " + cards2Length);
 
     }
+
 }

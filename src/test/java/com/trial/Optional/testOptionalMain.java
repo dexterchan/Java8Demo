@@ -1,5 +1,6 @@
 package com.trial.Optional;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -74,6 +75,16 @@ public class testOptionalMain {
         ret=value.map((kk)->kk*2).orElse(0);
         assert(ret.intValue()==0);
 
+
+    }
+
+    @Test
+    public void testOfElseString(){
+        String str=null;
+        String s = Optional.ofNullable(str).map(st->st).orElse("Nothing");
+
+        Assert.assertNotNull(s);
+        Assert.assertEquals(s,"Nothing");
 
     }
 
