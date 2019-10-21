@@ -12,6 +12,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.stream.Stream;
 
 import static org.hamcrest.Matchers.closeTo;
@@ -125,7 +126,8 @@ public class MathApplicationTest {
         Assert.assertEquals(mathApplication.subtract(20.0, 10.0),10.0,0);
 
         //test the add functionality
-        Assert.assertEquals(mathApplication.add(20.0, 10.0),30.0,0);
+        //Assert.assertEquals(mathApplication.add(20.0, 10.0),30.0,0);
+        assertEquals(mathApplication.add(20.0,10.0),30.0,0);
 
         //create an inOrder verifier for a single mock
         InOrder inOrder = inOrder(calcService);

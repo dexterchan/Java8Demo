@@ -5,6 +5,7 @@ import org.junit.Test;
 
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -73,9 +74,9 @@ public class StreamFilterMapNumberTest {
     }
     @Test
     public void runFilterForEachAccumulate(){
-        Accum accum=new Accum();
-        numbers.stream().filter(x->x%2==0).forEach(x->accum.value+=x);
-        System.out.println("for each accum Filter testing="+accum.value);
+        int sumvalue= numbers.parallelStream().filter(x->x%2==0).reduce(0, (a,b)->a+b,(e,f)->e+f);
+        System.out.println("for each accum Filter testing="+sumvalue);
+        assertEquals(sumvalue,70);
     }
 
     @Test
@@ -90,13 +91,12 @@ public class StreamFilterMapNumberTest {
     }
     @Test
     public void runStreamOf(){
-
         Stream<Integer> s = Stream.of(1,2,90,12,432,4,56,3);
         int maxvalue=s.max((a,b)->a.compareTo(b)).get();
         System.out.println("Max Stream Of:"+maxvalue);
 
-        Double[] d = {1.0,2.0,3.0,4.0};
-        Stream<Double> sd = Stream.of(d);
+        double[] d = {1.0,2.0,3.0,4.0};
+        Stream<Double> sd = Arrays.stream(d).boxed();
         System.out.println("Stream of Double system out");
         sd.forEach(System.out::println);
     }

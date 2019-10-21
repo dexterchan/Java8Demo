@@ -29,10 +29,14 @@ public class StreamListToMapTest {
     public void usingLambda(){
         Map<Integer, Employee> resultMap  = employees.stream()
                 .collect(Collectors.toMap(e -> e.eno, e->e));
+        resultMap.entrySet().forEach(
+                System.out::println
+        );
+        /*
         for( Map.Entry<Integer,Employee> e:resultMap.entrySet()){
             System.out.println(e.getKey()+";"+e.getValue());
 
-        }
+        }*/
 
     }
 
@@ -56,6 +60,9 @@ public class StreamListToMapTest {
         Map<String, Integer> cards2Length = (Map<String,Integer>) cards.stream()
                 .collect(Collectors.toMap(Function.identity(), String::length, (e1, e2) -> e1));
         System.out.println("map: " + cards2Length);
+
+        Integer[] a = {1,2,3};
+        Arrays.asList(a).stream().reduce(0,(s,t)->s+t);
 
     }
 
