@@ -29,6 +29,7 @@ public class LockFreeLinkedListQueue {
     private AtomicInteger size ;
     private volatile Node head;
     private volatile Node tail;
+    private final static int FREE_DEAD_LOCK_MS = 50;
 
     private static final AtomicReferenceFieldUpdater<LockFreeLinkedListQueue, Node> headUpdater =
             AtomicReferenceFieldUpdater.newUpdater(LockFreeLinkedListQueue.class, Node.class, "head");
@@ -47,11 +48,11 @@ public class LockFreeLinkedListQueue {
 
         if (headUpdater.compareAndSet(this, null, node)){
             long time = System.currentTimeMillis();
-            log.debug("Enqueue startHeadNull:"+value.toString());
+            log.debug("Enqueue startHeadNull("+size.get()+"):"+value.toString());
             while(!tailUpdater.compareAndSet(this, null, node)){
-                if (System.currentTimeMillis() - time > 5000){
-                    log.error("Wait too long head null:");
-                    System.exit(-1);
+                if (System.currentTimeMillis() - time > FREE_DEAD_LOCK_MS){
+                    log.error(String.format("Wait too long head null %s (%d):",value.toString(),size.get()));
+                    tail = null;
                 }
             };
             log.debug("Enqueue stopHeadNUll:"+value.toString());
@@ -59,7 +60,7 @@ public class LockFreeLinkedListQueue {
             log.debug("Enqueue startHeadOK:"+value.toString());
             long time = System.currentTimeMillis();
             while (tail==null){
-                if (System.currentTimeMillis() - time > 5000){
+                if (System.currentTimeMillis() - time > FREE_DEAD_LOCK_MS){
                     log.error("Wait too long:");
                     System.exit(-1);
                 }
@@ -76,14 +77,15 @@ public class LockFreeLinkedListQueue {
 
     public Object dequeue(){
         Node head = headUpdater.getAndUpdate(this,node->
-                node!=null?node.next:null
+                size.get()>0 && node!=null ?node.next:null
         );
-        if (head!=null) {
-            log.debug("dequeue start:" + head.value.toString());
-        }else{
-            log.debug("dequeue start:null");
-        }
         tailUpdater.compareAndSet(this, head, null);
+        if (head!=null) {
+            log.debug("dequeue start ("+size.get()+"):" + head.value.toString());
+        }else{
+            log.debug("dequeue start ("+size.get()+":null");
+        }
+
 
         size.decrementAndGet();
 
