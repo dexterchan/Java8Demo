@@ -30,16 +30,16 @@ public class LockFreeArrayQueue {
      * @return
      */
     public boolean add(Integer element) {
-        int index = (tail.get() + 1) % atomicReferenceArray.length();
-        if (index == head.get() % atomicReferenceArray.length()) {
-            System.out.println("The current queue is full," + element + "Unable to join the team.!");
-            return false;
-        }
-        while (!atomicReferenceArray.compareAndSet(index, EMPTY, element)) {
-            return add(element);
-        }
+        int index;
+        do{
+             index = (tail.get() + 1) % atomicReferenceArray.length();
+             if (index == head.get() % atomicReferenceArray.length()) {
+                 System.out.println("The current queue is full," + element + "Unable to join the team.!");
+                 return false;
+             }
+        }while (!atomicReferenceArray.compareAndSet(index, EMPTY, element));
         tail.incrementAndGet(); //Moving tail pointer
-        System.out.println("Team success!" + element);
+        System.out.println("Team success add!" + element);
         return true;
     }
 
@@ -49,20 +49,20 @@ public class LockFreeArrayQueue {
      * @return
      */
     public Integer poll() {
-        if (head.get() == tail.get()) {
-            System.out.println("The current queue is empty");
-            return null;
-        }
-        int index = (head.get() + 1) % atomicReferenceArray.length();
-        Integer ele = (Integer) atomicReferenceArray.get(index);
-        if (ele == null) { //It's possible that other threads are also queuing.
-            return poll();
-        }
-        while (!atomicReferenceArray.compareAndSet(index, ele, EMPTY)) {
-            return poll();
-        }
+        int index;
+        Integer ele;
+
+        do{
+            if (head.get() == tail.get()) {
+                System.out.println("The current queue is empty");
+                return null;
+            }
+            index = (head.get() + 1) % atomicReferenceArray.length();
+            ele = (Integer) atomicReferenceArray.get(index);
+            //It's possible that other threads are also queuing.
+        }while (ele==null || !atomicReferenceArray.compareAndSet(index, ele, EMPTY));
         head.incrementAndGet();
-        System.out.println("Team success!" + ele);
+        System.out.println("Team success poll!" + ele);
         return ele;
     }
 
