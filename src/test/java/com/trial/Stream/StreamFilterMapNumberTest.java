@@ -81,7 +81,7 @@ public class StreamFilterMapNumberTest {
 
     @Test
     public void runFilterToArray(){
-
+int firstele=numbers.stream().findFirst().get();
         Integer[] array=numbers.stream().filter(x->x%2==0).toArray( (s)->new Integer[s]);//Integer[]::new);
         System.out.print("To Array:");
         for( int i: array){
