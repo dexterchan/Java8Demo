@@ -26,7 +26,7 @@ class Node {
 public class LockFreeLinkedListQueue {
 
 
-    private AtomicInteger size ;
+    private AtomicInteger size, commitSize ;
     private volatile Node head;
     private volatile Node tail;
     private final static int FREE_DEAD_LOCK_MS = 50;
@@ -39,6 +39,7 @@ public class LockFreeLinkedListQueue {
 
     public LockFreeLinkedListQueue(){
         size = new AtomicInteger(0);
+        commitSize = new AtomicInteger(0);
         head=null;
         tail=null;
     }
@@ -46,62 +47,87 @@ public class LockFreeLinkedListQueue {
     public void enqueue(Object value){
         Node node = new Node(value);
 
-        if (headUpdater.compareAndSet(this, null, node)){
-            long time = System.currentTimeMillis();
-            log.debug("Enqueue startHeadNull("+size.get()+"):"+value.toString());
-            while(!tailUpdater.compareAndSet(this, null, node)){
-                if (System.currentTimeMillis() - time > FREE_DEAD_LOCK_MS){
-                    log.error(String.format("Wait too long head null %s (%d):",value.toString(),size.get()));
-                    tail = null;
-                }
+        if(size.getAndIncrement()==0){
+            log.debug("Enqueue startHeadNull(head{},tail{}, value{})", head!=null?head.value:null, tail!=null?tail.value:null,node.value);
+            while (!headUpdater.compareAndSet(this, null, node)){
+                log.debug("Waiting to enqueue {}", node.value);
+            }
+
+
+            while (!tailUpdater.compareAndSet(this, null, head)){
+
             };
-            log.debug("Enqueue stopHeadNUll:"+value.toString());
-        }else{
-            log.debug("Enqueue startHeadOK:"+value.toString());
+            log.debug("Enqueue stopHeadNull(head{},tail{},value{})", head!=null?head.value:null, tail!=null?tail.value:null, node.value);
+        }else {
+
+            log.debug("Enqueue startHeadOK(head{},tail{},value{})", head!=null?head.value:null, tail!=null?tail.value:null,node.value);
             long time = System.currentTimeMillis();
-            while (tail==null){
+            while (tail==null || head==null){
                 if (System.currentTimeMillis() - time > FREE_DEAD_LOCK_MS){
-                    log.error("Wait too long:");
-                    System.exit(-1);
+                    log.error("Wait too long for increment:{}",node.value);
+                    size.decrementAndGet();
+                    throw new IllegalStateException("Enqueue failed to reach consistent state:"+ value);
                 }
             }
 
             while (!tail.setNodeNext(node)){
             }
             tail = node;
-            log.debug("Enqueue stopHeadOK:"+value.toString());
+            log.debug("Enqueue stopHeadOK(head{},tail{},value{})", head!=null?head.value:null, tail!=null?tail.value:null, node.value);
         }
+        commitSize.incrementAndGet();
 
-        size.incrementAndGet();
     }
 
     public Object dequeue(){
-        Node head = headUpdater.getAndUpdate(this,node->
-                size.get()>0 && node!=null ?node.next:null
-        );
-        tailUpdater.compareAndSet(this, head, null);
-        if (head!=null) {
-            log.debug("dequeue start ("+size.get()+"):" + head.value.toString());
+
+        if (commitSize.get()==0){
+            return null;
+        }
+        Node _head=null;
+        Node _tail=null;
+        int s = size.getAndDecrement();
+        if (s>0){
+            long time = System.currentTimeMillis();
+            do{
+                _head = head;
+                _tail = tail;
+                log.debug("dequeue start ({}):{}",s, _head.value.toString());
+                if (_head==null || _tail==null){
+                    if (System.currentTimeMillis() - time > FREE_DEAD_LOCK_MS){
+                        log.error("Wait too long to dequeue");
+                        size.incrementAndGet();
+                        throw new IllegalStateException("Dequeue failed to reach consistent state");
+                    }
+                    continue;
+                }
+            }while(headUpdater.compareAndSet(this, _head, _head.next));
+
+            if (_tail == _head){
+                if (!tailUpdater.compareAndSet(this, _tail, null)){
+                    log.error("inconsistent state");
+                    size.incrementAndGet();
+                    throw new IllegalStateException("Dequeue failed to reach consistent state");
+                }
+            }
+            commitSize.decrementAndGet();
         }else{
-            log.debug("dequeue start ("+size.get()+":null");
+            commitSize.incrementAndGet();
+            return null;
         }
 
 
-        size.decrementAndGet();
-
-        if (head!=null) {
-            log.debug("dequeue stop:" + head.value.toString());
-        }else{
-            log.debug("dequeue stop:null");
+        if (_head!=null) {
+            log.debug("dequeue stop:" + _head.value.toString());
         }
-        if(head !=null)
-            return head.value;
+        if(_head !=null)
+            return _head.value;
         else
             return null;
     }
 
     public int size(){
-        return size.get();
+        return commitSize.get();
     }
 
 

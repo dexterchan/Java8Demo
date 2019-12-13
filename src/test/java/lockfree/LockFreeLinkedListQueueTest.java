@@ -1,6 +1,7 @@
 package lockfree;
 
 import com.google.common.collect.Sets;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
 import java.util.HashSet;
@@ -13,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
-
+@Slf4j
 public class LockFreeLinkedListQueueTest {
     static int numberofelement=10000;
 
@@ -78,24 +79,36 @@ public class LockFreeLinkedListQueueTest {
     }
     @Test
     public void checkLockedFreeLinkedListDeuqueMixEnqueue() {
-        numberofelement=500;
+        numberofelement=10;
         LockFreeLinkedListQueue lockFreeLinkedListQueue = new LockFreeLinkedListQueue();
         Set<Integer> removeIntegerSet = Sets.newConcurrentHashSet();
+        Set<Integer> failedIncrement = Sets.newConcurrentHashSet();
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         AtomicInteger nullvalue = new AtomicInteger(0);
         IntStream.range(0, numberofelement).parallel().forEach(
                 i -> {
                     if (i%2 == 0) {
-                        lockFreeLinkedListQueue.enqueue(i);
-                    }else{
-                        Object obj = (Integer)lockFreeLinkedListQueue.dequeue();
-                        if (obj!=null) {
-                            Integer value = (Integer)obj;
-                            executorService.execute(()->{
-                                removeIntegerSet.add(value);
-                            });
-                        }else{
-                            nullvalue.incrementAndGet();
+                        try {
+                            lockFreeLinkedListQueue.enqueue(i);
+                        }catch(Exception ex){
+                            log.error(ex.getMessage());
+                            failedIncrement.add(i);
+                        }
+                    }
+
+                    else{
+                        try {
+                            Object obj = (Integer) lockFreeLinkedListQueue.dequeue();
+                            if (obj != null) {
+                                Integer value = (Integer) obj;
+                                executorService.execute(() -> {
+                                    removeIntegerSet.add(value);
+                                });
+                            } else {
+                                nullvalue.incrementAndGet();
+                            }
+                        }catch(Exception ex){
+                            log.error(ex.getMessage());
                         }
 
                     }
@@ -117,7 +130,10 @@ public class LockFreeLinkedListQueueTest {
                     }
                 }
         );
-
+        List remainList = lockFreeLinkedListQueue.toList();
+        log.info ("Removed Items:{}",removeIntegerSet.size());
+        log.info ("Remain Items:{}", remainList.size());
+        log.info("Failed add:{}", failedIncrement.size());
 
     }
 }
