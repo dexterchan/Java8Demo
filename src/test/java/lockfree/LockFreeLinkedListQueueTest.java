@@ -1,7 +1,10 @@
 package lockfree;
 
 import com.google.common.collect.Sets;
+import io.exp.metric.TimeMyRun;
+import io.exp.metric.TimerInterface;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashSet;
@@ -18,12 +21,23 @@ import static org.junit.Assert.*;
 public class LockFreeLinkedListQueueTest {
     static int numberofelement=10000;
 
+    TimerInterface<Boolean> enqueueTimerInterface;
+
+    @Before
+    public void init(){
+        enqueueTimerInterface = new TimeMyRun<>("Enqueue Timer");
+    }
+
     @Test
     public void checkLockedFreeLinkedListDeuqueAfterEnqueue() {
         LockFreeLinkedListQueue lockFreeLinkedListQueue = new LockFreeLinkedListQueue();
+
         IntStream.range(0,numberofelement).parallel().forEach(
                 i->{
-                    lockFreeLinkedListQueue.enqueue(i);
+                    enqueueTimerInterface.timeit(()->{
+                        lockFreeLinkedListQueue.enqueue(i);
+                        return true;
+                    });
                 }
         );
 
@@ -34,6 +48,9 @@ public class LockFreeLinkedListQueueTest {
         assertEquals(numberofelement, integerSet.size() );
         assertEquals(lockFreeLinkedListQueue.size(), numberofelement);
 
+        List remain = lockFreeLinkedListQueue.toList();
+        assertEquals(remain.size(), numberofelement);
+        /*
         Set<Integer> removeIntegerSet = Sets.newConcurrentHashSet();
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         IntStream.range(0, numberofelement).forEach(
@@ -76,6 +93,8 @@ public class LockFreeLinkedListQueueTest {
         }
         assertEquals(removeIntegerSet.size(), numberofelement);
         assertEquals(lockFreeLinkedListQueue.size(), 0);
+        */
+
     }
     @Test
     public void checkLockedFreeLinkedListDeuqueMixEnqueue() {

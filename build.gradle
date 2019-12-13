@@ -15,6 +15,7 @@ ext{
     slf4jVersion = '1.7.28'
     log4jVersion = '2.12.1'
     lombokVersion = '1.18.10'
+    metricsVersion = '3.2.3'
 }
 
 dependencies {
@@ -37,6 +38,8 @@ dependencies {
 
     // https://mvnrepository.com/artifact/com.google.guava/guava
     compile group: 'com.google.guava', name: 'guava', version: '28.0-jre'
+
+    compile "io.dropwizard.metrics:metrics-core:${metricsVersion}"
 
     compile ('org.web3j:core:4.1.0')
 }
