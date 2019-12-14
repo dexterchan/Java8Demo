@@ -18,8 +18,8 @@ class Node {
         this.value=value;
         this.next=null;
     }
-    public boolean setNodeNext(Node node){
-        return (nextUpdater.compareAndSet(this, null, node) );
+    public boolean setNodeNext( Node node){
+        return ( nextUpdater.compareAndSet(this, null, node) );
     }
 }
 @Slf4j
@@ -56,18 +56,18 @@ public class LockFreeLinkedListQueue {
             oldHead = this.head;
             if (oldHead == null){
                 newHead = node;
-
                 if ((System.currentTimeMillis() - startTime) > FREE_DEAD_LOCK_MS) {
-                    log.debug("failed to insert first block lock {}", value);
-                    System.exit(-1);
+                    log.debug("failed to insert first element {}", value);
+                    throw new IllegalStateException(String.format("Enqueue: failed to compete resource to insert first element {}", value));
                 }
             }else{
                 Node tailNode = oldHead;
-                while (!tailNode.setNodeNext(node)){
+                while (!tailNode.setNodeNext(node) ){
                     tailNode = tailNode.next;
                     if ((System.currentTimeMillis() - startTime) > FREE_DEAD_LOCK_MS) {
-                        log.debug("head{} failed to acquire lock , {}", oldHead.value, value);
-                        System.exit(-1);
+                        int s = size.get();
+                        log.debug("failed to compete resource to insert {} element {}",s, value);
+                        throw new IllegalStateException(String.format("Enqueue: failed to compete resource to insert {} element {}",s, value));
                     }
                 }
                 break;
@@ -80,16 +80,20 @@ public class LockFreeLinkedListQueue {
     }
 
     public Object dequeue(){
+        Node oldHead = null;
+        Node newHead = null;
+        do{
+            oldHead = this.head;
+            if (oldHead==null) {
+                //log.debug("Nothing to dequeue");
+                return null;
+            }
+            newHead = oldHead.next;
 
-
-        Node _head=null;
-
-
-        if (_head!=null) {
-            log.debug("dequeue stop:" + _head.value.toString());
-        }
-        if(_head !=null)
-            return _head.value;
+        }while (!headUpdater.compareAndSet(this, oldHead, newHead));
+        size.decrementAndGet();
+        if(oldHead !=null)
+            return oldHead.value;
         else
             return null;
     }

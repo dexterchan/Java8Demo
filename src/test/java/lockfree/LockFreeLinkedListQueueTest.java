@@ -1,14 +1,17 @@
 package lockfree;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.exp.metric.TimeMyRun;
 import io.exp.metric.TimerInterface;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.internal.matchers.Null;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,10 +25,12 @@ public class LockFreeLinkedListQueueTest {
     static int numberofelement=10000;
 
     TimerInterface<Boolean> enqueueTimerInterface;
+    TimerInterface<Integer> dequeueTimerInterface;
 
     @Before
     public void init(){
         enqueueTimerInterface = new TimeMyRun<>("Enqueue Timer");
+        dequeueTimerInterface = new TimeMyRun<>("Dequeue Timer");
     }
 
     @Test
@@ -46,20 +51,29 @@ public class LockFreeLinkedListQueueTest {
         Set<Integer> integerSet = Sets.newConcurrentHashSet();
         integerList.forEach(i->integerSet.add(i));
         assertEquals(numberofelement, integerSet.size() );
-        assertEquals(lockFreeLinkedListQueue.size(), numberofelement);
-
         List remain = lockFreeLinkedListQueue.toList();
         assertEquals(remain.size(), numberofelement);
-        /*
+        AtomicInteger dequeueRejectionNumber = new AtomicInteger(0);
         Set<Integer> removeIntegerSet = Sets.newConcurrentHashSet();
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         IntStream.range(0, numberofelement).forEach(
                 i->{
                     if (i%2==0){
-                        int value = (Integer)lockFreeLinkedListQueue.dequeue();
-                        executorService.execute(()->{
-                            removeIntegerSet.add(value);
-                        });
+                        try {
+                            int value = dequeueTimerInterface.timeit(
+                                    () -> {
+                                        return Optional.ofNullable(lockFreeLinkedListQueue.dequeue()).map(
+                                                (v) -> (Integer) v
+                                        ).orElseThrow(() -> new NullPointerException("Nothing got dequeued"));
+
+                                    }
+                            );
+                            executorService.execute(() -> {
+                                removeIntegerSet.add(value);
+                            });
+                        }catch (NullPointerException be){
+                            dequeueRejectionNumber.incrementAndGet();
+                        }
                     }
                 }
         );
@@ -71,16 +85,32 @@ public class LockFreeLinkedListQueueTest {
         } catch (InterruptedException e) {
             executorService.shutdownNow();
         }
+        assertEquals(dequeueRejectionNumber.get(), 0);
         assertEquals(removeIntegerSet.size(), numberofelement/2);
-        assertEquals(lockFreeLinkedListQueue.size(), numberofelement/2);
+        remain = lockFreeLinkedListQueue.toList();
+        assertEquals(remain.size(), numberofelement/2);
+
+
+        dequeueRejectionNumber.set(0);
 
         ExecutorService executorService2 = Executors.newFixedThreadPool(10);
         IntStream.range(0, lockFreeLinkedListQueue.size()).forEach(
                 i->{
-                    int value = (Integer)lockFreeLinkedListQueue.dequeue();
-                    executorService2.execute(()->{
-                        removeIntegerSet.add(value);
-                    });
+                    try {
+                        int value = dequeueTimerInterface.timeit(
+                                () -> {
+                                    return Optional.ofNullable(lockFreeLinkedListQueue.dequeue()).map(
+                                            (v) -> (Integer) v
+                                    ).orElseThrow(() -> new NullPointerException("Nothing got dequeued"));
+
+                                }
+                        );
+                        executorService2.execute(() -> {
+                            removeIntegerSet.add(value);
+                        });
+                    }catch (NullPointerException be){
+                        dequeueRejectionNumber.incrementAndGet();
+                    }
                 }
         );
         executorService2.shutdown();
@@ -91,16 +121,18 @@ public class LockFreeLinkedListQueueTest {
         } catch (InterruptedException e) {
             executorService2.shutdownNow();
         }
+        assertEquals(dequeueRejectionNumber.get(), 0);
         assertEquals(removeIntegerSet.size(), numberofelement);
         assertEquals(lockFreeLinkedListQueue.size(), 0);
-        */
+
 
     }
     @Test
     public void checkLockedFreeLinkedListDeuqueMixEnqueue() {
-        numberofelement=10;
+        //numberofelement=10;
         LockFreeLinkedListQueue lockFreeLinkedListQueue = new LockFreeLinkedListQueue();
         Set<Integer> removeIntegerSet = Sets.newConcurrentHashSet();
+        List<Integer> removeIntegerList = Lists.newCopyOnWriteArrayList();
         Set<Integer> failedIncrement = Sets.newConcurrentHashSet();
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         AtomicInteger nullvalue = new AtomicInteger(0);
@@ -117,16 +149,17 @@ public class LockFreeLinkedListQueueTest {
 
                     else{
                         try {
-                            Object obj = (Integer) lockFreeLinkedListQueue.dequeue();
-                            if (obj != null) {
-                                Integer value = (Integer) obj;
-                                executorService.execute(() -> {
+                            Integer value = Optional.ofNullable(lockFreeLinkedListQueue.dequeue()).map(
+                                    (v)->(Integer)v
+                            ).orElseThrow( ()->new NullPointerException("Nothing got dequeued"));
+                            executorService.execute(() -> {
                                     removeIntegerSet.add(value);
-                                });
-                            } else {
-                                nullvalue.incrementAndGet();
-                            }
-                        }catch(Exception ex){
+                                    removeIntegerList.add((value));
+                            });
+                        }catch(NullPointerException ne){
+                            nullvalue.incrementAndGet();
+                        }
+                        catch(Exception ex){
                             log.error(ex.getMessage());
                         }
 
@@ -152,7 +185,13 @@ public class LockFreeLinkedListQueueTest {
         List remainList = lockFreeLinkedListQueue.toList();
         log.info ("Removed Items:{}",removeIntegerSet.size());
         log.info ("Remain Items:{}", remainList.size());
+        log.info ("Remain linked list size:{}", lockFreeLinkedListQueue.size());
+        log.info ("failed dequeue:{}", nullvalue.get());
         log.info("Failed add:{}", failedIncrement.size());
+        assertEquals(removeIntegerSet.size(), removeIntegerList.size());
+        assertEquals(nullvalue.get(), lockFreeLinkedListQueue.size());
+        assertEquals(lockFreeLinkedListQueue.size(), remainList.size());
+        assertEquals(numberofelement/2,remainList.size() + failedIncrement.size() + removeIntegerSet.size() );
 
     }
 }
