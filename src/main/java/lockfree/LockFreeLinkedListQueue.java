@@ -58,27 +58,28 @@ public class LockFreeLinkedListQueue {
     public void enqueue(Object value){
         Node node = new Node(value);
 
-        //log.debug("Enqueue startHead(head{},value{})", head!=null?head.value:null,node.value );
 
         Node oldHead = null, newHead = null;
-        long startTime = System.currentTimeMillis();
+        //long startTime = System.currentTimeMillis();
         do{
             oldHead = headUpdater.get(this);
             if (oldHead == null){
                 newHead = node;
+                /*
                 if ((System.currentTimeMillis() - startTime) > FREE_DEAD_LOCK_MS) {
                     log.debug("failed to insert first element {}", value);
                     throw new IllegalStateException(String.format("Enqueue: failed to compete resource to insert first element {}", value));
-                }
+                }*/
             }else{
                 Node tailNode = oldHead;
                 while (!tailNode.setNodeNext(node) ){
                     tailNode = tailNode.next;
+                    /*
                     if ((System.currentTimeMillis() - startTime) > FREE_DEAD_LOCK_MS) {
                         int s = size.get();
                         log.debug("failed to compete resource to insert {} element {}",s, value);
                         throw new IllegalStateException(String.format("Enqueue: failed to compete resource to insert %d element %d",s, value));
-                    }
+                    }*/
                 }
                 break;
             }
