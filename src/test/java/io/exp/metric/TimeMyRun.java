@@ -15,7 +15,7 @@ public class TimeMyRun<T> implements  TimerInterface<T>{
     public TimeMyRun(String myName){
         this.myName = myName;
         MetricRegistry registry = new MetricRegistry();
-        registry.register("trigger calculate request", myTimer);
+        registry.register(myName, myTimer);
         Slf4jReporter reporter = Slf4jReporter.forRegistry(registry)
                 .outputTo(log)
                 .convertRatesTo(TimeUnit.SECONDS)
