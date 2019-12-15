@@ -7,19 +7,32 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+//Node: Reference - https://en.wikipedia.org/wiki/Non-blocking_linked_list
+
 class Node {
     volatile Object value;
     volatile Node next;
+    volatile Boolean logicalDelete;
 
     private static final AtomicReferenceFieldUpdater<Node, Node> nextUpdater =
             AtomicReferenceFieldUpdater.newUpdater(Node.class, Node.class, "next");
 
+    private static final AtomicReferenceFieldUpdater<Node, Boolean> logicalDeleter =
+            AtomicReferenceFieldUpdater.newUpdater(Node.class, Boolean.class, "logicalDelete");
+
     Node(Object value){
         this.value=value;
         this.next=null;
+        this.logicalDelete=false;
     }
     public boolean setNodeNext( Node node){
         return ( nextUpdater.compareAndSet(this, null, node) );
+    }
+    public boolean setNodeLogicalDelete(){
+        return logicalDeleter.compareAndSet(this, false, true);
+    }
+    public Node getNext(){
+        return nextUpdater.get(this);
     }
 }
 @Slf4j
@@ -27,8 +40,9 @@ public class LockFreeLinkedListQueue {
 
 
     private AtomicInteger size ;
+    private AtomicInteger numberOfPurge;
     private volatile Node head;
-    //private volatile Node tail;
+    private volatile Node tail;
     private final static int FREE_DEAD_LOCK_MS = 50;
 
     private static final AtomicReferenceFieldUpdater<LockFreeLinkedListQueue, Node> headUpdater =
@@ -40,7 +54,7 @@ public class LockFreeLinkedListQueue {
 */
     public LockFreeLinkedListQueue(){
         size = new AtomicInteger(0);
-
+        numberOfPurge = new AtomicInteger(0);
         head=null;
         //tail=null;
     }
@@ -53,7 +67,7 @@ public class LockFreeLinkedListQueue {
         Node oldHead = null, newHead = null;
         long startTime = System.currentTimeMillis();
         do{
-            oldHead = this.head;
+            oldHead = headUpdater.get(this);
             if (oldHead == null){
                 newHead = node;
                 if ((System.currentTimeMillis() - startTime) > FREE_DEAD_LOCK_MS) {
@@ -80,34 +94,56 @@ public class LockFreeLinkedListQueue {
     }
 
     public Object dequeue(){
-        Node oldHead = null;
+        Node dNode = null;
         Node newHead = null;
-        do{
-            oldHead = this.head;
-            if (oldHead==null) {
-                //log.debug("Nothing to dequeue");
-                return null;
-            }
-            newHead = oldHead.next;
 
-        }while (!headUpdater.compareAndSet(this, oldHead, newHead));
-        size.decrementAndGet();
-        if(oldHead !=null)
-            return oldHead.value;
-        else
+        //2 phases approach to dequeue
+
+        //First phase logical delete
+        do{
+            dNode = headUpdater.get(this);
+            while(dNode!=null && dNode.logicalDelete){
+                dNode = dNode.next;
+            }
+
+        }while(dNode!=null && !dNode.setNodeLogicalDelete());
+        if (dNode == null){
             return null;
+        }
+        size.decrementAndGet();
+
+        //Second phase , real delete
+        Node oldHead = null;
+        int localPurge = 0;
+        do{
+            localPurge = 0;
+            oldHead = headUpdater.get(this);
+            newHead = oldHead;
+            while (newHead!=null && newHead.getNext() != null && newHead.logicalDelete){
+                newHead = newHead.getNext();
+                localPurge++;
+            }
+        }while (!headUpdater.compareAndSet(this, oldHead, newHead));
+        this.numberOfPurge.addAndGet(localPurge);
+
+        return dNode.value;
     }
 
     public int size(){
         return size.get();
     }
 
+    public int getNumberOfPurge(){
+        return this.numberOfPurge.get();
+    }
 
     public List toList(){
         List list = new LinkedList();
         Node node = this.head;
         while (node != null){
-            list.add(node.value);
+            if (!node.logicalDelete) {
+                list.add(node.value);
+            }
             node = node.next;
         }
         return list;

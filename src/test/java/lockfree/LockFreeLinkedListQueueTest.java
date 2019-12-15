@@ -22,7 +22,7 @@ import java.util.stream.IntStream;
 import static org.junit.Assert.*;
 @Slf4j
 public class LockFreeLinkedListQueueTest {
-    static int numberofelement=10000;
+    static int numberofelement=100000;
 
     TimerInterface<Boolean> enqueueTimerInterface;
     TimerInterface<Integer> dequeueTimerInterface;
@@ -129,7 +129,7 @@ public class LockFreeLinkedListQueueTest {
     }
     @Test
     public void checkLockedFreeLinkedListDeuqueMixEnqueue() {
-        //numberofelement=10;
+        //numberofelement=1000000;
         LockFreeLinkedListQueue lockFreeLinkedListQueue = new LockFreeLinkedListQueue();
         Set<Integer> removeIntegerSet = Sets.newConcurrentHashSet();
         List<Integer> removeIntegerList = Lists.newCopyOnWriteArrayList();
@@ -140,7 +140,10 @@ public class LockFreeLinkedListQueueTest {
                 i -> {
                     if (i%2 == 0) {
                         try {
-                            lockFreeLinkedListQueue.enqueue(i);
+                            //enqueueTimerInterface.timeit(()-> {
+                                lockFreeLinkedListQueue.enqueue(i);
+                                //return true;
+                            //});
                         }catch(Exception ex){
                             log.error(ex.getMessage());
                             failedIncrement.add(i);
@@ -149,9 +152,12 @@ public class LockFreeLinkedListQueueTest {
 
                     else{
                         try {
-                            Integer value = Optional.ofNullable(lockFreeLinkedListQueue.dequeue()).map(
+                            Integer value =
+                                    //dequeueTimerInterface.timeit(()->
+                                    Optional.ofNullable(lockFreeLinkedListQueue.dequeue()).map(
                                     (v)->(Integer)v
                             ).orElseThrow( ()->new NullPointerException("Nothing got dequeued"));
+                            //);
                             executorService.execute(() -> {
                                     removeIntegerSet.add(value);
                                     removeIntegerList.add((value));
@@ -188,6 +194,7 @@ public class LockFreeLinkedListQueueTest {
         log.info ("Remain linked list size:{}", lockFreeLinkedListQueue.size());
         log.info ("failed dequeue:{}", nullvalue.get());
         log.info("Failed add:{}", failedIncrement.size());
+        log.info("Number of purge: {}", lockFreeLinkedListQueue.getNumberOfPurge());
         assertEquals(removeIntegerSet.size(), removeIntegerList.size());
         assertEquals(nullvalue.get(), lockFreeLinkedListQueue.size());
         assertEquals(lockFreeLinkedListQueue.size(), remainList.size());
