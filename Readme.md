@@ -4,12 +4,10 @@
 
 <h5>Baseline Queues.newConcurrentLinkedQueue</h5>
 Number of Thread = 10 <br>
-Enqueue:
-min=5.2E-5, max=0.060827, mean=0.0010290836575875487, stddev=0.0025738292154657526, median=1.19E-4, p75=0.0014775, p95=0.004883299999999999, p98=0.00637252, p99=0.006779970000000001, p999=0.059701075000000145, mean_rate=60683.69472716612, m1=0.0, m5=0.0, m15=0.0, rate_unit=events/second, duration_unit=milliseconds
-Dequeue:
-min=5.2E-5, max=0.060827, mean=0.0010290787937743192, stddev=0.0025738309965213416, median=1.19E-4, p75=0.0014775, p95=0.004883299999999999, p98=0.00637252, p99=0.006779970000000001, p999=0.059701075000000145, mean_rate=60643.250658628414, m1=0.0, m5=0.0, m15=0.0, rate_unit=events/second, duration_unit=milliseconds
+mean_rate=48434.223043932645 rate_unit=events/second, 
+mean_rate=48435.10156865056  rate_unit=events/second, 
 
 <h5>LockFreeLinkedListQueue</h5>
 Number of Thread = 10 <br>
-min=8.6E-5, max=0.037048, mean=8.919970817120623E-4, stddev=0.002217604739776787, median=1.91E-4, p75=5.97E-4, p95=0.004289349999999999, p98=0.006404379999999997, p99=0.008804180000000009, p999=0.03688336700000002, mean_rate=39049.64577117262, m1=0.0, m5=0.0, m15=0.0, rate_unit=events/second, duration_unit=milliseconds
-min=8.6E-5, max=0.037048, mean=8.919970817120623E-4, stddev=0.002217604739776787, median=1.91E-4, p75=5.97E-4, p95=0.004289349999999999, p98=0.006404379999999997, p99=0.008804180000000009, p999=0.03688336700000002, mean_rate=39049.613763057474, m1=0.0, m5=0.0, m15=0.0, rate_unit=events/second, duration_unit=milliseconds
+mean_rate=62353.248276424776,  rate_unit=events/second,
+mean_rate=62353.271004611684,  rate_unit=events/second, 

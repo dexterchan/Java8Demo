@@ -207,9 +207,9 @@ public class LockFreeLinkedListQueueTest {
     }
 
     @Test
-    public void baselineConcurrentLinkedQueue() {
+    public void baselineLinkedBlockingQueue() {
         int numberofelement=100000;
-        Queue<Integer> concurrentLinkedQueue = Queues.newConcurrentLinkedQueue();
+        Queue<Integer> linkedBlockingQueue = Queues.newLinkedBlockingQueue();
         Set<Integer> removeIntegerSet = Sets.newConcurrentHashSet();
         List<Integer> removeIntegerList = Lists.newCopyOnWriteArrayList();
         Set<Integer> failedIncrement = Sets.newConcurrentHashSet();
@@ -222,7 +222,7 @@ public class LockFreeLinkedListQueueTest {
                         if (i%2 == 0) {
                             try {
                                 enqueueTimerInterface.timeit(()-> {
-                                    concurrentLinkedQueue.add(i);
+                                    linkedBlockingQueue.add(i);
                                     return true;
                                 });
                             }catch(Exception ex){
@@ -234,7 +234,7 @@ public class LockFreeLinkedListQueueTest {
                             try {
                                 Integer value =
                                         dequeueTimerInterface.timeit(()->
-                                                Optional.ofNullable(concurrentLinkedQueue.poll()).map(
+                                                Optional.ofNullable(linkedBlockingQueue.poll()).map(
                                                         (v)->(Integer)v
                                                 ).orElseThrow( ()->new NullPointerException("Nothing got dequeued"))
                                         );
@@ -262,7 +262,7 @@ public class LockFreeLinkedListQueueTest {
         } catch (InterruptedException e) {
             executorService.shutdownNow();
         }
-        List remain = concurrentLinkedQueue.stream().collect(Collectors.toList());
+        List remain = linkedBlockingQueue.stream().collect(Collectors.toList());
         remain.forEach(obj->{
                     Integer i = (Integer)obj;
                     if (removeIntegerSet.contains(i)){
@@ -270,16 +270,16 @@ public class LockFreeLinkedListQueueTest {
                     }
                 }
         );
-        List remainList = concurrentLinkedQueue.stream().collect(Collectors.toList());
+        List remainList = linkedBlockingQueue.stream().collect(Collectors.toList());
         log.info ("Removed Items:{}",removeIntegerSet.size());
         log.info ("Remain Items:{}", remainList.size());
-        log.info ("Remain linked list size:{}", concurrentLinkedQueue.size());
+        log.info ("Remain linked list size:{}", linkedBlockingQueue.size());
         log.info ("failed dequeue:{}", nullvalue.get());
         log.info("Failed add:{}", failedIncrement.size());
 
         assertEquals(removeIntegerSet.size(), removeIntegerList.size());
 
-        assertEquals(concurrentLinkedQueue.size(), remainList.size());
+        assertEquals(linkedBlockingQueue.size(), remainList.size());
         assertEquals(numberofelement/2,remainList.size() + failedIncrement.size() + removeIntegerSet.size() );
 
     }
