@@ -42,16 +42,12 @@ public class LockFreeLinkedListQueue {
     private AtomicInteger size ;
     private AtomicInteger numberOfPurge;
     private volatile Node head;
-    private volatile Node tail;
-    private final static int FREE_DEAD_LOCK_MS = 50;
+
+    private final static int FREE_DEAD_LOCK_MS = 500;
 
     private static final AtomicReferenceFieldUpdater<LockFreeLinkedListQueue, Node> headUpdater =
             AtomicReferenceFieldUpdater.newUpdater(LockFreeLinkedListQueue.class, Node.class, "head");
 
-    /*
-    private static final AtomicReferenceFieldUpdater<LockFreeLinkedListQueue, Node> tailUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(LockFreeLinkedListQueue.class, Node.class, "tail");
-*/
     public LockFreeLinkedListQueue(){
         size = new AtomicInteger(0);
         numberOfPurge = new AtomicInteger(0);
@@ -81,7 +77,7 @@ public class LockFreeLinkedListQueue {
                     if ((System.currentTimeMillis() - startTime) > FREE_DEAD_LOCK_MS) {
                         int s = size.get();
                         log.debug("failed to compete resource to insert {} element {}",s, value);
-                        throw new IllegalStateException(String.format("Enqueue: failed to compete resource to insert {} element {}",s, value));
+                        throw new IllegalStateException(String.format("Enqueue: failed to compete resource to insert %d element %d",s, value));
                     }
                 }
                 break;

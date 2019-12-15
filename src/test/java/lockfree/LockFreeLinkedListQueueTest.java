@@ -22,7 +22,7 @@ import java.util.stream.IntStream;
 import static org.junit.Assert.*;
 @Slf4j
 public class LockFreeLinkedListQueueTest {
-    static int numberofelement=100000;
+    static int numberofelement=1000;
 
     TimerInterface<Boolean> enqueueTimerInterface;
     TimerInterface<Integer> dequeueTimerInterface;
@@ -129,7 +129,7 @@ public class LockFreeLinkedListQueueTest {
     }
     @Test
     public void checkLockedFreeLinkedListDeuqueMixEnqueue() {
-        //numberofelement=1000000;
+        int numberofelement=100000;
         LockFreeLinkedListQueue lockFreeLinkedListQueue = new LockFreeLinkedListQueue();
         Set<Integer> removeIntegerSet = Sets.newConcurrentHashSet();
         List<Integer> removeIntegerList = Lists.newCopyOnWriteArrayList();
