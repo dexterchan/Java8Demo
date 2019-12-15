@@ -140,10 +140,10 @@ public class LockFreeLinkedListQueueTest {
                 i -> {
                     if (i%2 == 0) {
                         try {
-                            //enqueueTimerInterface.timeit(()-> {
+                            enqueueTimerInterface.timeit(()-> {
                                 lockFreeLinkedListQueue.enqueue(i);
-                                //return true;
-                            //});
+                                return true;
+                            });
                         }catch(Exception ex){
                             log.error(ex.getMessage());
                             failedIncrement.add(i);
@@ -153,11 +153,11 @@ public class LockFreeLinkedListQueueTest {
                     else{
                         try {
                             Integer value =
-                                    //dequeueTimerInterface.timeit(()->
+                                    dequeueTimerInterface.timeit(()->
                                     Optional.ofNullable(lockFreeLinkedListQueue.dequeue()).map(
                                     (v)->(Integer)v
-                            ).orElseThrow( ()->new NullPointerException("Nothing got dequeued"));
-                            //);
+                            ).orElseThrow( ()->new NullPointerException("Nothing got dequeued"))
+                            );
                             executorService.execute(() -> {
                                     removeIntegerSet.add(value);
                                     removeIntegerList.add((value));
