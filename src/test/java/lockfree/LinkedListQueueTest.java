@@ -14,7 +14,7 @@ import java.util.stream.IntStream;
 import static org.junit.Assert.*;
 
 public class LinkedListQueueTest {
-    static int numberofelement=6;
+    static int numberofelement=100;
     @Test
     public void sequentialRunOK() {
 
